@@ -1,0 +1,18 @@
+version: "3"
+
+services:
+  nginx_1:
+    container_name: nginx_1
+    ports:
+      - 7001:80
+    image: nginx
+  nginx_2:
+    container_name: nginx_2
+    image: nginx
+    ports:
+      - 7002:80
+  nginx_3:
+    container_name: nginx_3
+    image: nginx
+    ports:
+      - 7003:80
