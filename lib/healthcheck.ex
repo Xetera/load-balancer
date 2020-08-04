@@ -1,5 +1,5 @@
 defmodule LoadBalancer.HealthCheck.State do
-  defstruct state: :healthy, url: nil
+  defstruct url: nil, uptime: 0
 end
 
 defmodule LoadBalancer.HealthCheck do
@@ -10,36 +10,59 @@ defmodule LoadBalancer.HealthCheck do
     GenServer.start_link(__MODULE__, arg)
   end
 
-  @spec init(any) :: {:ok, LoadBalancer.HealthCheck.State.t()}
-  def init(url) do
-    Logger.info("Starting healthcheck!")
+  def init(url: url) do
+    Logger.info("Starting backend!")
 
-    schedule()
+    state = %LoadBalancer.HealthCheck.State{url: url}
 
-    {:ok,
-     %LoadBalancer.HealthCheck.State{
-       state: :healthy,
-       url: url
-     }}
+    {:ok, state, {:continue, :initial_healthcheck}}
   end
 
-  def handle_info(:work, s) do
+  def handle_continue(:initial_healthcheck, state) do
+    Logger.info("Doing initial healthcheck on #{state.url}")
+
+    case healthcheck(state) do
+      {:ok, _status} ->
+        schedule()
+        Registry.register(Registry, :backend, nil)
+        {:noreply, %{state | uptime: state.uptime + 1}}
+
+      {:fail, reason} ->
+        Logger.info("Could not initialize backend: #{reason}")
+        {:stop, :initial_healthcheck_failed}
+    end
+  end
+
+  def handle_info(:healthcheck, s) do
     url = Map.get(s, :url)
     schedule()
 
     Logger.info("Healthchecking backend: #{url}")
 
-    case HTTPoison.get(url) do
-      {:ok, %HTTPoison.Response{status_code: status}} ->
-        {:noreply, %{s | state: if(status == 200, do: :healthy, else: :unhealthy)}}
+    case healthcheck(s) do
+      {:ok, _status} ->
+        {:noreply, %{s | uptime: s.uptime + 1}}
 
-      _ ->
-        {:noreply, %{s | state: :unhealthy}}
+      {:fail, reason} ->
+        Logger.info("Healthcheck failed with reason: #{reason}")
+        {:stop, :healthcheck_failed}
+    end
+  end
+
+  @spec healthcheck(LoadBalancer.HealthCheck.State.t()) ::
+          {:fail, atom()} | {:ok, [{:status, integer}, ...]}
+  def healthcheck(state) do
+    case HTTPoison.get(state.url) do
+      {:ok, %HTTPoison.Response{status_code: status}} ->
+        {:ok, status: status}
+
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        {:fail, reason}
     end
   end
 
   defp schedule do
-    # 2 seconds
-    Process.send_after(self(), :check, 1000 * 2)
+    # 1 second
+    Process.send_after(self(), :healthcheck, 1000)
   end
 end

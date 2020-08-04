@@ -7,10 +7,12 @@ defmodule LoadBalancer do
 
     healthchecks =
       Enum.map(backends, fn url ->
-        {LoadBalancer.HealthCheck, url}
+        Supervisor.child_spec({LoadBalancer.HealthCheck, url: url}, id: url)
       end)
 
-    Supervisor.start_link(healthchecks,
+    registry = {Registry, [keys: :duplicate, name: Registry]}
+
+    Supervisor.start_link([registry | healthchecks],
       strategy: :one_for_one,
       name: LoadBalancer.HealthCheckSupervisor
     )

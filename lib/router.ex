@@ -13,9 +13,9 @@ defmodule LoadBalancer.Plug do
   @spec call(Plug.Conn.t(), any) :: Plug.Conn.t()
   def call(conn, _opts) do
     base_url = GenServer.call(:pool, :next)
-    method = Map.get(conn, :method)
-    ip = conn |> Map.get(:remote_ip) |> Tuple.to_list() |> Enum.join(".")
-    headers = [{"X-Forwarded-For", ip} | Map.get(conn, :req_headers)]
+    IO.inspect(Registry.lookup(Registry, :backend))
+    ip = conn.remote_ip |> Tuple.to_list() |> Enum.join(".")
+    headers = [{"X-Forwarded-For", ip} | conn.req_headers]
 
     url =
       conn
@@ -24,7 +24,7 @@ defmodule LoadBalancer.Plug do
       |> Map.get(:path)
       |> build_url(base_url)
 
-    Logger.info("#{method} #{url}")
+    Logger.info("#{conn.method} #{url}")
 
     case HTTPoison.get(url, headers) do
       {:ok, %HTTPoison.Response{body: body, headers: headers, status_code: status_code}} ->
