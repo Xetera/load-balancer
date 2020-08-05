@@ -1,6 +1,6 @@
 # LoadBalancer
 
-**TODO: Add description**
+Basic round robin load balancer implementation in elixir.
 
 ## Installation
 
