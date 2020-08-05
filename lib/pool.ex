@@ -1,5 +1,5 @@
 defmodule LoadBalancer.Pool.State do
-  defstruct index: -1, healthy: [], unhealthy: []
+  defstruct index: -1
 end
 
 defmodule LoadBalancer.Pool do
@@ -14,20 +14,13 @@ defmodule LoadBalancer.Pool do
   def init(backends) do
     Logger.info("Starting pool!")
 
-    {:ok,
-     %LoadBalancer.Pool.State{
-       unhealthy: [],
-       healthy: backends,
-       index: 0
-     }}
+    {:ok, %LoadBalancer.Pool.State{index: 0}}
   end
 
-  def handle_call(:next, _, %{healthy: servers, index: index}) do
+  def handle_call(:next, _, %{index: index}) do
+    servers = Registry.lookup(Registry, :backend)
+    {_pid, url} = Enum.at(servers, index)
     new_index = rem(index + 1, length(servers))
-    {:reply, Enum.at(servers, index), %{healthy: servers, index: new_index}}
+    {:reply, url, %{index: new_index}}
   end
-
-  # def handle_cast(:add_backend, url, %{healthy: healthy}) do
-  #   {:noreply, %{servers: [url | healthy]}}
-  # end
 end

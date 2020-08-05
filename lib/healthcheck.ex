@@ -24,7 +24,7 @@ defmodule LoadBalancer.HealthCheck do
     case healthcheck(state) do
       {:ok, _status} ->
         schedule()
-        Registry.register(Registry, :backend, nil)
+        Registry.register(Registry, :backend, state.url)
         {:noreply, %{state | uptime: state.uptime + 1}}
 
       {:fail, reason} ->

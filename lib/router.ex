@@ -13,7 +13,6 @@ defmodule LoadBalancer.Plug do
   @spec call(Plug.Conn.t(), any) :: Plug.Conn.t()
   def call(conn, _opts) do
     base_url = GenServer.call(:pool, :next)
-    IO.inspect(Registry.lookup(Registry, :backend))
     ip = conn.remote_ip |> Tuple.to_list() |> Enum.join(".")
     headers = [{"X-Forwarded-For", ip} | conn.req_headers]
 
