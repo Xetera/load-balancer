@@ -10,8 +10,8 @@ defmodule LoadBalancer.Pool do
     GenServer.start_link(__MODULE__, arg, name: :pool)
   end
 
-  @spec init(any) :: {:ok, LoadBalancer.Pool.State.t()}
-  def init(backends) do
+  @spec init(any()) :: {:ok, LoadBalancer.Pool.State.t()}
+  def init(_args) do
     Logger.info("Starting pool!")
 
     {:ok, %LoadBalancer.Pool.State{index: 0}}

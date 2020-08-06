@@ -6,6 +6,8 @@ defmodule LoadBalancer.HealthCheck do
   use GenServer
   require Logger
 
+  @interval Application.get_env(:load_balancer, :healthcheck_interval)
+
   def start_link(arg) do
     GenServer.start_link(__MODULE__, arg)
   end
@@ -63,6 +65,6 @@ defmodule LoadBalancer.HealthCheck do
 
   defp schedule do
     # 1 second
-    Process.send_after(self(), :healthcheck, 1000)
+    Process.send_after(self(), :healthcheck, @interval)
   end
 end

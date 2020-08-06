@@ -3,7 +3,7 @@ defmodule LoadBalancer do
   require Logger
 
   def start(_type, _args) do
-    backends = ["http://localhost:7001", "http://localhost:7002", "http://localhost:7003"]
+    backends = Application.get_env(:load_balancer, :backend_urls)
 
     healthchecks =
       Enum.map(backends, fn url ->
@@ -26,7 +26,7 @@ defmodule LoadBalancer do
           port: 1234
         ]
       },
-      {LoadBalancer.Pool, backends}
+      LoadBalancer.Pool
     ]
 
     Logger.info("Starting!")

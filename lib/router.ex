@@ -13,6 +13,7 @@ defmodule LoadBalancer.Plug do
   @spec call(Plug.Conn.t(), any) :: Plug.Conn.t()
   def call(conn, _opts) do
     base_url = GenServer.call(:pool, :next)
+    # Does this break with ipv6?
     ip = conn.remote_ip |> Tuple.to_list() |> Enum.join(".")
     headers = [{"X-Forwarded-For", ip} | conn.req_headers]
 
@@ -25,6 +26,7 @@ defmodule LoadBalancer.Plug do
 
     Logger.info("#{conn.method} #{url}")
 
+    # TODO: allow POST and other requests as well
     case HTTPoison.get(url, headers) do
       {:ok, %HTTPoison.Response{body: body, headers: headers, status_code: status_code}} ->
         conn
